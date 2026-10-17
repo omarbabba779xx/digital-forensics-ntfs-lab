@@ -1,0 +1,41 @@
+# Preuves et exports : ne jamais versionner
+*.E01
+*.E02
+*.E03
+*.E04
+*.E05
+*.E06
+*.E07
+*.E08
+*.E09
+*.E10
+*.raw
+*.dd
+*.mem
+*.vdi
+*.vmdk
+\$MFT
+\$LogFile
+\$J
+\$UsnJrnl*
+NTFS_ORIG/
+TRAVAIL/
+IMAGE/
+ANALYSE/
+*.db
+*.sqlite
+
+# Binaires d'outils
+Tools/
+*.exe
+*.dll
+*.zip
+*.7z
+
+# Divers
+verite_terrain.txt
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log
