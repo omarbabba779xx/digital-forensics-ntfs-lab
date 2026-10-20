@@ -109,6 +109,8 @@ Termes à connaître dans la colonne *Event Info* :
 
 Les captures annotées (cadres rouges numérotés) sont dans [`docs/screenshots`](docs/screenshots), numérotées dans l'ordre du TP : simulation, acquisition et vérification, export, contrôle des attributs et des hash, parsing, lecture de `$UsnJrnl` et de `$LogFile`, vue de FTK Imager, puis l'essai 3 du bonus. Le nom d'utilisateur de la VM y est flouté.
 
+**Pour tout suivre dans l'ordre, étape par étape, avec chaque capture expliquée : [`docs/deroule-pas-a-pas.md`](docs/deroule-pas-a-pas.md).**
+
 ## Structure du dépôt
 
 ```
@@ -121,6 +123,7 @@ Les captures annotées (cadres rouges numérotés) sont dans [`docs/screenshots`
 │   ├── chronologie.md          tableau de chronologie et recoupement des trois sources
 │   └── questions.md            réponses Q1 à Q8, bonus, conclusion
 └── docs/
+    ├── deroule-pas-a-pas.md    le TP dans l'ordre chronologique, chaque capture expliquée
     └── screenshots/            captures annotées
 ```
 
