@@ -5,29 +5,55 @@
 ![Digital Forensics](https://img.shields.io/badge/Digital%20Forensics-NTFS-1b4332?style=for-the-badge)
 ![Outil](https://img.shields.io/badge/NTFS%20Log%20Tracker-v1.9-2b3a33?style=flat-square)
 ![Outil](https://img.shields.io/badge/FTK%20Imager-8.3-2b3a33?style=flat-square)
-![Statut](https://img.shields.io/badge/statut-en%20cours-b86e00?style=flat-square)
+![Statut](https://img.shields.io/badge/statut-r%C3%A9alis%C3%A9%2C%20bonus%20non%20r%C3%A9solu-2b6e44?style=flat-square)
 
-TP de la séance 3 du module *Digital Forensics* (4IIR, EMSI Tanger, 2026/2027). Il fait suite au TP de la séance 2 (acquisition et préservation des preuves) : on réutilise la même méthode (acquérir, vérifier, analyser sur copie) pour répondre à une question plus fine.
+TP de la séance 3 du module *Digital Forensics* (5IIR, EMSI Tanger, 2026/2027). Il fait suite au TP de la séance 2 (acquisition et préservation des preuves) : on réutilise la même méthode (acquérir, vérifier, analyser sur copie) pour répondre à une question plus fine.
 
-> **Aucune preuve brute n'est versionnée.** Images, exports `$MFT` / `$LogFile` / `$J` et bases d'analyse restent hors Git (voir [`.gitignore`](.gitignore)). Ce dépôt contient la méthode, le script de simulation, les modèles de rendu et, au fil de l'avancement, les captures commentées et les empreintes.
+> **Aucune preuve brute n'est versionnée.** Images, exports `$MFT` / `$LogFile` / `$J` et bases d'analyse restent hors Git (voir [`.gitignore`](.gitignore)). Ce dépôt contient la méthode, le script de simulation, les réponses, les captures commentées et les empreintes.
 
 ---
+
+## Résultat en bref
+
+Les six actions sont retrouvées **à la seconde** dans `$UsnJrnl:$J`, et confirmées dans `$LogFile` (heures UTC, image de l'essai 2).
+
+| Étape | Action | Heure (UTC) | Trace dans `$UsnJrnl` | N° MFT |
+|---|---|---|---|---|
+| E1 | Créer le dossier `TP_NTFS` | 16:33:07 | `File_Created` (attribut **Directory**) | 32414 |
+| E2 | Créer `rapport.txt` | 16:33:46 | `File_Created`, `Data_Added`, `File_Closed` | 32881 |
+| E3 | Modifier `rapport.txt` | 16:34:12 | `Data_Added` sans `File_Created` | 32881 |
+| E4 | Renommer en `rapport_final.txt` | 16:34:31 | `File_Renamed_Old` / `File_Renamed_New` | 32881 |
+| E5 | Créer `secret.txt` | 16:34:47 | `File_Created`, `Data_Added`, `File_Closed` | 29546 |
+| E6 | Supprimer `secret.txt` | 16:35:08 | `File_Closed, File_Deleted` | 29546 |
+
+- Le renommage garde le **même numéro MFT** (32881) : c'est la preuve que `rapport_final.txt` est l'ancien `rapport.txt`.
+- **Le bonus n'est pas résolu** : le texte de `secret.txt` (« Code d'acces : 4589 ») n'a pu être retrouvé dans aucun des trois essais. Le fait de l'écriture est prouvé, pas le contenu (voir [`rendu/questions.md`](rendu/questions.md)).
+
+### Les trois essais
+
+| | Essai 1 | Essai 2 (référence) | Essai 3 (bonus) |
+|---|---|---|---|
+| Début de l'acquisition après E6 | 81 min | 9 min 26 s | 10 s |
+| Lecture réelle de la zone `$MFT` / `$LogFile` après E6 (estimation) | ≈ 84 min | ≈ 16 min | ≈ 8 min |
+| `$LogFile` | **écrasé** (journal circulaire de 64 Mo) | lisible | lisible |
+| Entrée MFT de `secret.txt` réattribuée après | + 54 s | + 3 s | + 14 s |
+| Texte retrouvé | non | non | non |
+
+Enseignements : un délai de 81 minutes efface `$LogFile` ; une image de disque en marche n'est pas un instantané ; l'entrée MFT d'un fichier supprimé est réattribuée en quelques secondes, ce qui détruit le texte d'un petit fichier.
 
 ## État d'avancement
 
 | Étape | État |
 |---|---|
 | Lecture de l'énoncé, plan de travail | Fait |
-| Retour à un état initial de la VM (restauration du snapshot du TP précédent) | Fait |
 | Snapshot `Before_S3_NTFS` (VM éteinte) | Fait, le 17 octobre 2026 à 15:45:08 UTC |
-| Support préparé (arborescence `Evidence\S3\`, script de simulation) | Fait |
-| Simulation des 6 actions dans la VM | À faire |
-| Acquisition de l'image `Windows_Victim_S3.E01` et vérification | À faire |
-| Export de `$MFT`, `$LogFile`, `$UsnJrnl:$J` et contrôle (`attrib`, hash) | À faire |
-| Parsing dans NTFS Log Tracker et analyse | À faire |
-| Questions Q1 à Q8, chronologie, conclusion | À faire |
-
-Ce tableau est mis à jour à chaque étape terminée.
+| Simulation des 6 actions dans la VM (3 essais) | Fait |
+| Acquisition de l'image `Windows_Victim_S3.E01` et vérification (essai 2) | Fait : MD5 et SHA-1 vérifiés (*Match*), aucun bad block |
+| Export de `$MFT`, `$LogFile`, `$UsnJrnl:$J` et contrôle (`attrib`, SHA-1 originaux = copies) | Fait |
+| Parsing dans NTFS Log Tracker (UTC) et analyse | Fait |
+| Questions Q1 à Q8, chronologie, conclusion | Fait ([`rendu/`](rendu)) |
+| Bonus (contenu de `secret.txt`) | Non résolu, documenté |
+| Restauration du snapshot `Before_S3_NTFS` | À faire en dernier |
 
 ## Pourquoi ce TP
 
@@ -43,55 +69,45 @@ Le principe est volontairement simple. On **sait** ce qui a été fait (six acti
 | `$UsnJrnl:$J` | `[root]\$Extend\$UsnJrnl`, flux `$J` | *Quand* et *comment* un fichier a changé | Jours à semaines |
 | `$LogFile` | `[root]\$LogFile` | Quelles opérations bas niveau ont été écrites dans la MFT | Minutes à quelques heures (64 Mo circulaire) |
 
-- Chaque fichier a un **numéro d'entrée MFT**. Il ne change pas quand on renomme le fichier : c'est lui qui prouve que `rapport_final.txt` *est* l'ancien `rapport.txt`.
-- `$UsnJrnl:$J` est un **flux de données alternatif** (ADS) de `$UsnJrnl`.
-- NTFS stocke les dates en **UTC** : tous les outils sont réglés en UTC.
+- Chaque fichier a un **numéro d'entrée MFT**. Il ne change pas quand on renomme le fichier. Une référence de fichier fait 64 bits : 48 bits d'entrée et 16 bits de **séquence**, qui augmente quand l'entrée est réutilisée.
+- `$UsnJrnl:$J` est un **flux de données alternatif** (ADS) de `$UsnJrnl`, et un fichier *sparse* (taille logique 584 Mo, environ 38 Mo réellement occupés).
+- NTFS stocke les dates en **UTC** : tous les outils sont réglés en UTC. L'horloge de la VM avance d'une heure sur l'UTC.
 
 ## La simulation
 
-Le script [`scripts/simulation_S3.ps1`](scripts/simulation_S3.ps1) exécute six actions, séparées de **30 secondes** pour qu'on les distingue dans les journaux, et note l'heure UTC de chacune dans `verite_terrain.txt` (écrit sur le support, pas sur le disque de la victime).
+Le script [`scripts/simulation_S3.ps1`](scripts/simulation_S3.ps1) exécute six actions, séparées de **30 secondes**, et note l'heure UTC de chacune dans `verite_terrain.txt` (écrit sur le support, pas sur le disque de la victime).
 
-| Étape | Action | Commande | Trace attendue |
-|---|---|---|---|
-| E1 | Créer le dossier `C:\TP_NTFS` | `New-Item -ItemType Directory` | Création d'un **dossier** |
-| E2 | Créer `rapport.txt` | `Set-Content` | Création d'un **fichier** |
-| E3 | Ajouter une ligne | `Add-Content` | Une **modification** |
-| E4 | Renommer en `rapport_final.txt` | `Rename-Item` | Un **renommage** |
-| E5 | Créer `secret.txt` | `Set-Content` | Création d'un fichier |
-| E6 | Supprimer `secret.txt` | `Remove-Item` | Une **suppression** |
-
-> Il faut acquérir l'image **tout de suite après** : `$LogFile` est un journal circulaire de 64 Mo, réécrit en quelques dizaines de minutes sur un système actif.
+| Étape | Action | Commande |
+|---|---|---|
+| E1 | Créer le dossier `C:\TP_NTFS` | `New-Item -ItemType Directory` |
+| E2 | Créer `rapport.txt` | `Set-Content` |
+| E3 | Ajouter une ligne | `Add-Content` |
+| E4 | Renommer en `rapport_final.txt` | `Rename-Item` |
+| E5 | Créer `secret.txt` | `Set-Content` |
+| E6 | Supprimer `secret.txt` | `Remove-Item` |
 
 ## Méthode
 
-1. **État initial** : snapshot de la VM, VM éteinte (un snapshot « à chaud » écrit la RAM et peut rester bloqué).
+1. **État initial** : snapshot de la VM éteinte (un snapshot « à chaud » écrit la RAM et peut rester bloqué).
 2. **Simulation** dans la VM, puis **acquisition** de l'image E01 avec FTK Imager (disque physique, vérification activée).
-3. **Ouverture de l'image** sur la machine d'analyse, vérification d'intégrité, partition NTFS principale.
-4. **Export** de `$MFT`, `$LogFile` et du flux `$J`, plus la liste de hash calculée par FTK.
-5. **Contrôle** avec `attrib` : ces fichiers sont cachés et système, donc invisibles pour `dir`. Originaux en lecture seule, **copies de travail** pour l'analyse, comparaison des SHA-1.
-6. **Parsing** dans NTFS Log Tracker (fuseau UTC, carving désactivé).
-7. **Lecture** de l'onglet `$UsnJrnl` (une ligne = un changement), puis recoupement avec `$LogFile`.
+3. **Export** de `$MFT`, `$LogFile` et du flux `$J`, plus la liste de hash calculée par FTK.
+4. **Contrôle** avec `attrib` : ces fichiers sont cachés et système, donc invisibles pour `dir`. Originaux en lecture seule (`attrib +r +s +h`), **copies de travail** pour l'analyse, comparaison des SHA-1.
+5. **Parsing** dans NTFS Log Tracker (fuseau UTC, carving désactivé).
+6. **Lecture** de l'onglet `$UsnJrnl` (une ligne = un changement), puis recoupement avec `$LogFile`.
 
-Six termes à connaître dans la colonne *Event Info* :
+Termes à connaître dans la colonne *Event Info* :
 
 | Terme | Signification | Étapes |
 |---|---|---|
 | `File_Created` | Création du fichier ou du dossier | E1, E2, E5 |
 | `Data_Added` | Données écrites (le fichier grossit) | E2, E3, E5 |
-| `File_Renamed_Old` | Ancien nom, juste avant un renommage | E4 |
-| `File_Renamed_New` | Nouveau nom, juste après | E4 |
+| `File_Renamed_Old` / `File_Renamed_New` | Ancien nom / nouveau nom | E4 |
 | `File_Deleted` | Suppression | E6 |
 | `File_Closed` | Le programme a fermé le fichier : fin de l'opération | toutes |
 
-## Critères de réussite
+## Captures
 
-- **Intégrité** : image vérifiée, originaux en lecture seule, analyse sur des copies, hash identiques.
-- **Méthode** : toutes les heures en UTC, chaque réponse appuyée par une capture.
-- **Compréhension** : le fichier renommé est suivi par son **numéro MFT**, pas seulement par son nom.
-
-## Rendu
-
-Les modèles à compléter sont dans [`templates/`](templates) : [`chronologie.md`](templates/chronologie.md) (tableau de chronologie et recoupement) et [`questions.md`](templates/questions.md) (Q1 à Q8, bonus, conclusion).
+Les captures annotées (cadres rouges numérotés) sont dans [`docs/screenshots`](docs/screenshots), numérotées dans l'ordre du TP : simulation, acquisition et vérification, export, contrôle des attributs et des hash, parsing, lecture de `$UsnJrnl` et de `$LogFile`, vue de FTK Imager, puis l'essai 3 du bonus. Le nom d'utilisateur de la VM y est flouté.
 
 ## Structure du dépôt
 
@@ -101,11 +117,11 @@ Les modèles à compléter sont dans [`templates/`](templates) : [`chronologie.m
 ├── .gitignore                  exclut images, exports, bases d'analyse et binaires
 ├── scripts/
 │   └── simulation_S3.ps1       les 6 actions horodatées en UTC
-├── templates/
-│   ├── chronologie.md          tableau de chronologie à compléter
-│   └── questions.md            questions d'investigation Q1 à Q8
+├── rendu/
+│   ├── chronologie.md          tableau de chronologie et recoupement des trois sources
+│   └── questions.md            réponses Q1 à Q8, bonus, conclusion
 └── docs/
-    └── screenshots/            captures commentées (ajoutées au fil du TP)
+    └── screenshots/            captures annotées
 ```
 
 ## Avertissement
